@@ -1,22 +1,20 @@
-library(data.table)
+library(sqldf)
 
 # read data from file
-DT <- fread("../data/household_power_consumption.txt", sep=";", 
-            na.strings=c("?"))
+hpc <- read.csv.sql("../data/household_power_consumption.txt", sep=";", 
+                    sql="SELECT * 
+                    FROM file 
+                    WHERE Date IN ('1/2/2007','2/2/2007')")
 
-#convert date string to date class
-DT[,Date := as.Date(Date, format="%d/%m/%Y")] # slow!
-
-# select rows by dates
-consumption=DT[Date %between% c("2007-02-01", "2007-02-02")]
-
-# select graphics device
-png(filename="plot1.png", width=480, height=480)
+#convert ?'s to NA's
+hpc[hpc=="?"]=NA
 
 # create plot
-hist(consumption$Global_active_power, 
+hist(hpc$Global_active_power, 
      main="Global Active Power", 
      xlab="Global Active Power (kilowatts)", 
      col="red")
 
+# save graphic to file
+dev.copy(png, filename="plot1.png", width=480, height=480)
 dev.off() 

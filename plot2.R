@@ -1,31 +1,24 @@
-library(data.table)
+library(sqldf)
 
 # read data from file
-DT <- fread("../data/household_power_consumption.txt", sep=";", 
-            na.strings = c("?"))
+hpc <- read.csv.sql("../data/household_power_consumption.txt", sep=";", 
+                    sql="SELECT * 
+                         FROM file 
+                         WHERE Date IN ('1/2/2007','2/2/2007')")
 
-#convert date string to date class
-DT[,Date := as.Date(Date, format="%d/%m/%Y")] # slow!
+#convert ?'s to NA's
+hpc[hpc=="?"]=NA
 
-# select rows by dates
-consumption=DT[Date %between% c("2007-02-01", "2007-02-02")]
-
-# select graphics device
-png(filename = "plot2.png", width = 480, height = 480)
+# add datetime column
+hpc$DateTime <- as.POSIXct(paste(hpc$Date, hpc$Time), 
+                           format="%d/%m/%Y %H:%M:%S")
 
 # create plot
-with(consumption, plot(Global_active_power,
-     type="l",
-     xaxt="n",
-     ylab="Global Active Power (kilowatts)",
-     xlab=""))
+with(hpc, plot(DateTime, Global_active_power,
+               type="l",
+               ylab="Global Active Power (kilowatts)",
+               xlab=""))
 
-# find midpoint for x axis
-midpoint <- consumption[,which(Date == "2007-02-02" & 
-                                   Time == c("00:00:00"))]
-axis(side=1, 
-     at=c(1,midpoint,nrow(consumption)), 
-     labels = c("Thu","Fri","Sat"),
-     tck=-.05)
-
+# save graphic to file
+dev.copy(png, filename="plot2.png", width=480, height=480)
 dev.off() 

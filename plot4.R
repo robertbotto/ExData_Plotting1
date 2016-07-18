@@ -1,62 +1,42 @@
-library(data.table)
+library(sqldf)
 
 # read data from file
-DT <- fread("../data/household_power_consumption.txt", sep=";", 
-            na.strings = c("?"))
+hpc <- read.csv.sql("../data/household_power_consumption.txt", sep=";", 
+                    sql="SELECT * 
+                    FROM file 
+                    WHERE Date IN ('1/2/2007','2/2/2007')")
 
-#convert date string to date class
-DT[,Date := as.Date(Date, format="%d/%m/%Y")] # slow!
+#convert ?'s to NA's
+hpc[hpc=="?"]=NA
 
-# select rows by dates
-consumption=DT[Date %between% c("2007-02-01", "2007-02-02")]
+# add datetime column
+hpc$DateTime <- as.POSIXct(paste(hpc$Date, hpc$Time), 
+                           format="%d/%m/%Y %H:%M:%S")
 
-# select graphics device
-png(filename = "plot4.png", width = 480, height = 480)
-
-par(mfrow = c(2,2)) # 4 subplots
-
-# find midpoint for x axis
-midpoint <- consumption[,which(Date == "2007-02-02" & 
-                                   Time == c("00:00:00"))]
+# 4 subplots
+par(mfrow = c(2,2)) 
 
 # create plot 1
-with(consumption, plot(Global_active_power,
-                       type="l",
-                       xaxt="n",
-                       ylab="Global Active Power",
-                       xlab=""))
+with(hpc, plot(DateTime, Global_active_power,
+               type="l",
+               ylab="Global Active Power (kilowatts)",
+               xlab=""))
 
-axis(side=1, 
-     at=c(1,midpoint,nrow(consumption)), 
-     labels = c("Thu","Fri","Sat"),
-     tck=-.05)
 
 # create plot 2
-with(consumption, plot(Voltage,
-                       type="l",
-                       xaxt="n",
-                       ylab="Voltage",
-                       xlab="datetime"))
-
-axis(side=1, 
-     at=c(1,midpoint,nrow(consumption)), 
-     labels = c("Thu","Fri","Sat"),
-     tck=-.05)
+with(hpc, plot(DateTime, Voltage,
+               type="l",
+               ylab="Voltage",
+               xlab="datetime"))
 
 # create plot 3
-with(consumption, plot(Sub_metering_1,
-                       type="l",
-                       xaxt="n",
-                       ylab="Energy sub metering",
-                       xlab=""))
-with(consumption, lines(Sub_metering_2, col="red"))
-with(consumption, lines(Sub_metering_3, col="blue"))
-
-axis(side=1, 
-     at=c(1,midpoint,nrow(consumption)), 
-     labels = c("Thu","Fri","Sat"),
-     tck=-.05)
-
+with(hpc, plot(DateTime,
+               Sub_metering_1,
+               type="l",
+               ylab="Energy sub metering",
+               xlab=""))
+with(hpc, lines(DateTime, Sub_metering_2, col="red"))
+with(hpc, lines(DateTime, Sub_metering_3, col="blue"))
 legend("topright", 
        lty=c(1,1,1),
        bty="n",
@@ -65,15 +45,11 @@ legend("topright",
 
 
 # create plot 4
-with(consumption, plot(Global_reactive_power,
-                       type="l",
-                       xaxt="n",
-                       ylab="Global_reactive_power",
-                       xlab="datetime"))
+with(hpc, plot(DateTime, Global_reactive_power,
+               type="l",
+               ylab="Global_reactive_power",
+               xlab="datetime"))
 
-axis(side=1, 
-     at=c(1,midpoint,nrow(consumption)), 
-     labels = c("Thu","Fri","Sat"),
-     tck=-.05)
-
+# save graphic to file
+dev.copy(png, filename="plot4.png", width=480, height=480)
 dev.off() 
