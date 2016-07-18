@@ -19,7 +19,7 @@ par(mfrow = c(2,2))
 # create plot 1
 with(hpc, plot(DateTime, Global_active_power,
                type="l",
-               ylab="Global Active Power (kilowatts)",
+               ylab="Global Active Power",
                xlab=""))
 
 
